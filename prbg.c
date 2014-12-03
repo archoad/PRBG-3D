@@ -36,9 +36,10 @@ void usage(void) {
 	couleur("31");
 	printf("Michel Dubois -- prbg -- (c) 2013\n\n");
 	couleur("0");
-	printf("Syntaxe: prbg <filename> <num>\n");
+	printf("Syntaxe: prbg <filename> <num> <algo>\n");
 	printf("\t<filename> -> file where the results of the algorithm will be stored\n");
 	printf("\t<num> -> sample size\n");
+	printf("\t<algo> -> 'alea', 'logistic', 'lin_cong', 'sinus', 'mid_square', 'blumblum'\n");
 }
 
 
@@ -106,12 +107,13 @@ double generateMiddleSquare(void) {
 
 double generateBlumBlumShub(void) {
 	// https://en.wikipedia.org/wiki/Blum_Blum_Shub
-	// x0 = (s*s) mod(M) avec M=p.q et p, q nombre de Blum
-	// p = 869393, q = 589497, n = pq = 512504565321
+	// x0 = (s*s) mod(n) avec n=p.q et p, q nombre de Blum
+	// p = 869393, q = 589497, n = p.q = 512504565321
 	// s in [1, n-1] -> s= 412504565321
-	static double xn = (412504565321 * 412504565321) % 512504565321;
+	double n = 512504565321;
+	static double xn = 496880664266; // result of fmod(pow(s, 2), n)
 	double value = xn;
-	xn = fmod((xn * xn), 512504565321); // equivalent to (xn * xn) % M
+	xn = fmod(pow(xn, 2), n); // equivalent to (xn * xn) % n
 	return value;
 }
 
@@ -123,15 +125,41 @@ void createFile(char *argv[]) {
 	if (fic != NULL) {
 		srand(time(NULL));
 		printf("INFO: file create\n");
-		for (i=0; i<sampleSize; i++) {
-			//alea = generateTrueAlea();
-			//alea = generateLinearCongruence();
-			//alea = generateSinusoidalAlea();
-			//alea = generateLogisticMap();
-			//alea = generateMiddleSquare();
-			alea = generateBlumBlumShub();
-			//printf("%ld -> %s\n", alea, dec2bin(alea));
-			fprintf(fic, "%lf\n", alea);
+		if (strcmp(argv[3], "alea") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateTrueAlea();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "logistic") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateLogisticMap();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "lin_cong") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateLinearCongruence();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "sinus") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateSinusoidalAlea();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "mid_square") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateMiddleSquare();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "blumblum") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateBlumBlumShub();
+				fprintf(fic, "%lf\n", alea);
+				//printf("%ld -> %s\n", alea, dec2bin(alea));
+			}
+		} else {
+			fclose(fic);
+			usage();
+			exit(EXIT_FAILURE);
 		}
 		fclose(fic);
 		printf("INFO: file close\n");
@@ -144,7 +172,7 @@ void createFile(char *argv[]) {
 
 int main(int argc, char *argv[]) {
 	switch (argc) {
-		case 3:
+		case 4:
 			sampleSize = atol(argv[2]);
 			createFile(argv);
 			exit(EXIT_SUCCESS);

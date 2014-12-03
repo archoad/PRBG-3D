@@ -24,8 +24,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.*/
 
 
 typedef struct data_struct {
-   long *list;
-   long size;
+	long *list;
+	long size;
 } data;
 
 
@@ -33,10 +33,10 @@ void usage(void) {
 	couleur("31");
 	printf("Michel Dubois -- specialNumbers -- (c) 2013\n\n");
 	couleur("0");
-	printf("Syntaxe: specialNumbers <number sequence> <num>\n");
-	printf("\t<number sequence> -> name of the algorithm\n");
+	printf("Syntaxe: specialNumbers <name> <sample size>\n");
+	printf("\t<name> -> name of the algorithm\n");
 	printf("\t\tavalaible algorithms are: prime, semiprime, blum, euler\n");
-	printf("\t<num> -> sample size\n");
+	printf("\t<sample size> -> sample size\n");
 }
 
 

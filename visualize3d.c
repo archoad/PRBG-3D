@@ -72,7 +72,11 @@ typedef struct _point {
 
 static point *pointsList = NULL;
 
-static unsigned long sampleSize = 0;
+
+static unsigned long sampleSize = 0,
+	seuil = 70000;
+
+static float *vertices = NULL;
 
 
 
@@ -97,7 +101,7 @@ void takeScreenshot(char *filename) {
 	png_byte buffer[width * height * 3];
 	int i;
 
-    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)buffer);
+	glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)buffer);
 	png_init_io(png, fp);
 	png_set_IHDR(png, info, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 	png_write_info(png, info);
@@ -111,13 +115,30 @@ void takeScreenshot(char *filename) {
 }
 
 
-void drawPoint(float x, float y, float z) {
+void drawPoint(point p) {
 	glPointSize(1.0);
 	glBegin(GL_POINTS);
-	glNormal3f(x, y, z);
-	glVertex3f(x, y, z);
+	glNormal3f(p.x, p.y, p.z);
+	glVertex3f(p.x, p.y, p.z);
 	glEnd();
 	glPointSize(1.0);
+}
+
+
+void drawSphere(point c) {
+	glTranslatef(c.x, c.y, c.z);
+	glutSolidSphere(0.2, 4, 4);
+}
+
+
+void drawLine(point p1, point p2){
+	glLineWidth(1.0);
+	glBegin(GL_LINES);
+	glColor3f(p1.r, p1.g, p1.b);
+	glNormal3f(p1.x, p1.y, p1.z);
+	glVertex3f(p1.x, p1.y, p1.z);
+	glVertex3f(p2.x, p2.y, p2.z);
+	glEnd();
 }
 
 
@@ -153,80 +174,88 @@ void drawAxes(void) {
 	float rayon = 0.1;
 	float length = 100/4.0;
 
+	// cube
 	glPushMatrix();
 	glColor3f(0.8, 0.8, 0.8);
 	glTranslatef(0.0, 0.0, 0.0);
 	glutWireCube(100/2.0);
 	glPopMatrix();
 
+	// origin
+	glPushMatrix();
 	glColor3f(1.0, 1.0, 1.0);
 	glutSolidSphere(rayon*4, 16, 16);
+	glPopMatrix();
 
+	// x axis
 	glPushMatrix();
-	glColor4f(1.0, 0.0, 0.0, 1.0);
+	glColor3f(1.0, 0.0, 0.0);
 	glTranslatef(length/2.0, 0.0, 0.0);
-	glScalef(length*2, rayon*5, rayon*5);
-	glutSolidCube(rayon*5);
+	glScalef(length*5.0, 1.0, 1.0);
+	glutSolidCube(rayon*2.0);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(length, 0.0, 0.0);
+	glRotated(90, 0, 1, 0);
+	glutSolidCone(rayon*2, rayon*4, 8, 8);
 	glPopMatrix();
 	drawString(length+2.0, 0.0, 0.0, "X");
 
+	// y axis
 	glPushMatrix();
-	glColor4f(0.0, 1.0, 0.0, 1.0);
+	glColor3f(0.0, 1.0, 0.0);
 	glTranslatef(0.0, length/2.0, 0.0);
-	glScalef(rayon*5, length*2, rayon*5);
-	glutSolidCube(rayon*5);
+	glScalef(1.0, length*5.0, 1.0);
+	glutSolidCube(rayon*2.0);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0.0, length, 0.0);
+	glRotated(90, -1, 0, 0);
+	glutSolidCone(rayon*2, rayon*4, 8, 8);
 	glPopMatrix();
 	drawString(0.0, length+2.0, 0.0, "Y");
 
+	// z axis
 	glPushMatrix();
-	glColor4f(0.0, 0.0, 1.0, 1.0);
+	glColor3f(0.0, 0.0, 1.0);
 	glTranslatef(0.0, 0.0, length/2.0);
-	glScalef(rayon*5, rayon*5, length*2);
-	glutSolidCube(rayon*5);
+	glScalef(1.0, 1.0, length*5.0);
+	glutSolidCube(rayon*2.0);
 	glPopMatrix();
-	drawString(0.0, 0.0, length+2.0, "Z");
-
 	glPushMatrix();
-	glColor4f(1.0, 0.0, 0.0, 1.0);
-	glTranslatef(length, 0.0, 0.0);
-	glRotated(90, 0, 1, 0);
-	glutSolidCone(rayon*4, rayon*8, 16, 16);
-	glPopMatrix();
-
-	glPushMatrix();
-	glColor4f(0.0, 1.0, 0.0, 1.0);
-	glTranslatef(0.0, length, 0.0);
-	glRotated(90, -1, 0, 0);
-	glutSolidCone(rayon*4, rayon*8, 16, 16);
-	glPopMatrix();
-
-	glPushMatrix();
-	glColor4f(0.0, 0.0, 1.0, 1.0);
 	glTranslatef(0.0, 0.0, length);
 	glRotated(90, 0, 0, 1);
-	glutSolidCone(rayon*4, rayon*8, 16, 16);
+	glutSolidCone(rayon*2, rayon*4, 8, 8);
 	glPopMatrix();
+	drawString(0.0, 0.0, length+2.0, "Z");
 }
 
 
 void drawObject(void) {
-	unsigned long i;
-	objectList = glGenLists(1);
-	glNewList(objectList, GL_COMPILE);
-	glLineWidth(1.0);
-	for (i=0; i<sampleSize; i++) {
-		glPushMatrix();
-		glColor3f(pointsList[i].r, pointsList[i].g, pointsList[i].b);
-		if (sampleSize >= 30000) {
-			drawPoint(pointsList[i].x, pointsList[i].y, pointsList[i].z);
-		} else {
-			glTranslatef(pointsList[i].x, pointsList[i].y, pointsList[i].z);
-			//glutSolidCube(0.4);
-			glutSolidSphere(0.3, 8, 8);
+	unsigned long i, cpt=0;
+	if (sampleSize >= seuil) {
+		vertices = calloc((sampleSize*3 + sampleSize*3), sizeof(float));
+		for (i=0; i<sampleSize; i++) {
+			vertices[cpt] = pointsList[i].x;
+			vertices[cpt+1] = pointsList[i].y;
+			vertices[cpt+2] = pointsList[i].z;
+			vertices[cpt+3] = pointsList[i].r;
+			vertices[cpt+4] = pointsList[i].g;
+			vertices[cpt+5] = pointsList[i].b;
+			cpt+=6;
 		}
-		glPopMatrix();
+	} else {
+		objectList = glGenLists(1);
+		glNewList(objectList, GL_COMPILE_AND_EXECUTE);
+		for (i=0; i<sampleSize; i++) {
+			glPushMatrix();
+//			drawLine(pointsList[i-1], pointsList[i]);
+			glColor3f(pointsList[i].r, pointsList[i].g, pointsList[i].b);
+			drawSphere(pointsList[i]);
+			glPopMatrix();
+		}
+		glEndList();
 	}
-	glEndList();
 }
 
 
@@ -405,43 +434,59 @@ void display(void) {
 	glRotatef(roty, 0.0, 1.0, 0.0);
 	glRotatef(rotz, 0.0, 0.0, 1.0);
 	drawAxes();
-	glCallList(objectList);
+	if (sampleSize >= seuil) {
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
+		glVertexPointer(3, GL_FLOAT, (3+3)*sizeof(vertices[0]), vertices);
+		glColorPointer(3, GL_FLOAT, (3+3)*sizeof(vertices[0]), &vertices[3]);
+		glDrawArrays(GL_POINTS, 0, sampleSize);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
+	} else {
+		glCallList(objectList);
+	}
 	glPopMatrix();
 
 	glutSwapBuffers();
 	glutPostRedisplay();
-
-	glDeleteLists(textList, 1);
 }
 
 
 void init(void) {
-	GLfloat modelAmbient[] = {0.5, 0.5, 0.5, 1.0};
-	GLfloat ambient[] = {0.0, 0.0, 0.0, 1.0};
-	GLfloat diffuse[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat position[] = {zoom/2, 0.0, zoom};
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, modelAmbient);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-	glEnable(GL_LIGHT0);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_AUTO_NORMAL);
-	glEnable(GL_NORMALIZE);
-	glEnable(GL_DEPTH_TEST); // mise en oeuvre du z-buffer
-	glEnable(GL_BLEND); // activation du canal alpha
-	glEnable(GL_COLOR_MATERIAL);
-	glDepthFunc(GL_LESS);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // paramétrage du canal alpha
-	glShadeModel(GL_SMOOTH);
-	// définition de la couler de fond
-	if (background){
+	if (background){ // White background
 		glClearColor(1.0, 1.0, 1.0, 1.0);
-	} else {
+	} else { // Black background
 		glClearColor(0.1, 0.1, 0.1, 1.0);
 	}
+
+	GLfloat position[] = {0.0, 0.0, 0.0, 1.0};
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
+
+	GLfloat modelAmbient[] = {0.5, 0.5, 0.5, 1.0};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, modelAmbient);
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_DEPTH_TEST);
+
+	GLfloat no_mat[] = {0.0, 0.0, 0.0, 1.0};
+	GLfloat mat_diffuse[] = {0.1, 0.5, 0.8, 1.0};
+	GLfloat mat_specular[] = {1.0, 1.0, 1.0, 1.0};
+	GLfloat shininess[] = {128.0};
+	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_AUTO_NORMAL);
+	glDepthFunc(GL_LESS);
+
 	drawObject();
 }
 
@@ -463,6 +508,7 @@ void glmain(int argc, char *argv[]) {
 	glutTimerFunc(dt, onTimer, 0);
 	fprintf(stdout, "INFO: OpenGL Version: %s\n", glGetString(GL_VERSION));
 	glutMainLoop();
+	glDeleteLists(textList, 1);
 	glDeleteLists(objectList, 1);
 }
 
@@ -500,11 +546,11 @@ void populatePoints(double tab[]) {
 		sum += tab[i];
 
 		if (mono) {
-			if (tab[i] == 111) { hue = (double)rand() / (double)(RAND_MAX - 1); }
+			if (i == 0) { hue = (double)rand() / (double)(RAND_MAX - 1); }
 		} else {
 			hue = (double)i / (double)sampleSize;
 		}
-		hsv2rgb(hue, 0.8, 0.8, &(pointsList[i].r), &(pointsList[i].g), &(pointsList[i].b));
+		hsv2rgb(hue, 1.0, 1.0, &(pointsList[i].r), &(pointsList[i].g), &(pointsList[i].b));
 
 		if (i>=3) {
 			x = (tab[i-2] - tab[i-3]);

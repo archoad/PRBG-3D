@@ -217,11 +217,11 @@ void send_sniff(libnet_t *l, pcap_t *p, char *dest, char *dport, int nbr) {
 		printf("### TCP SYN sent %s:%u -> %s:%s (%d bytes)\n", libnet_addr2name4(libnet_get_ipaddr4(l), LIBNET_DONT_RESOLVE), sport, dest, dport, bytes);
 		pcap_loop(p, 1, printPacket, (u_char *)&count);
 //		The RST packet is send by the libnet_destroy function
-//		tcp = tcp_rst(l, tcp, dport, sport);
-//		bytes = libnet_write(l);
-//		printf("### TCP RST sent %s:%u -> %s:%s (%d bytes)\n", libnet_addr2name4(libnet_get_ipaddr4(l), LIBNET_DONT_RESOLVE), sport, dest, dport, bytes);
+		tcp = tcp_rst(l, tcp, dport, sport);
+		bytes = libnet_write(l);
+		printf("### TCP RST sent %s:%u -> %s:%s (%d bytes)\n", libnet_addr2name4(libnet_get_ipaddr4(l), LIBNET_DONT_RESOLVE), sport, dest, dport, bytes);
 		printf("\n");
-		usleep(100); // 0.0001 second
+		usleep(10000); // 0.01 second
 	}
 
 }

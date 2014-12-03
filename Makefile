@@ -8,6 +8,7 @@ UNAME_S:=$(shell uname -s)
 
 CC=gcc
 CL=clang
+STRIP=strip
 CFLAGS= -O3 -Wall -W -Wstrict-prototypes -Werror
 ifeq ($(UNAME_S),Linux)
 	IFLAGSDIR= -I/usr/include
@@ -25,22 +26,23 @@ MATH_FLAGS= -lm
 AES_FLAGS= -lcrypto
 PNG_FLAGS= -lpng
 
-all: dest_sys visualize3d specialNumbers network prbg aes
+all: dest_sys visualize3d specialNumbers network prbg
 
 visualize3d: visualize3d.c
 	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(GL_FLAGS) $(PNG_FLAGS) $< -o $@
+	@$(STRIP) $@
 
 network: network.c
 	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(NET_FLAGS) $< -o $@
+	@$(STRIP) $@
 
 specialNumbers: specialNumbers.c
 	$(COMPIL) $(CFLAGS) $(MATH_FLAGS) $< -o $@
+	@$(STRIP) $@
 
 prbg: prbg.c
 	$(COMPIL) $(CFLAGS) $(MATH_FLAGS) $< -o $@
-
-aes: aes.c
-	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(AES_FLAGS) $< -o $@
+	@$(STRIP) $@
 
 dest_sys:
 	@echo "Destination system:" $(UNAME_S)
@@ -50,5 +52,4 @@ clean:
 	@rm -f specialNumbers
 	@rm -f network
 	@rm -f prbg
-	@rm -f aes
 
