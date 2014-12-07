@@ -39,7 +39,7 @@ void usage(void) {
 	printf("Syntaxe: prbg <filename> <num> <algo>\n");
 	printf("\t<filename> -> file where the results of the algorithm will be stored\n");
 	printf("\t<num> -> sample size\n");
-	printf("\t<algo> -> 'alea', 'logistic', 'lin_cong', 'sinus', 'mid_square', 'blumblum'\n");
+	printf("\t<algo> -> 'randu', 'alea', 'logistic', 'lin_cong', 'sinus', 'mid_square', 'blumblum'\n");
 }
 
 
@@ -95,6 +95,17 @@ double generateSinusoidalAlea(void) {
 }
 
 
+double generateRandu(void) {
+	// https://oeis.org/A096555
+	// x(1)=1, x(n) = 65539*x(n-1) mod 2^31. The sequence is periodic with period length 2^29.
+	static double xn = 1;
+	double exponent = pow(2, 31);
+	double value = xn;
+	xn = fmod((65539 * xn), exponent);
+	return value;
+}
+
+
 double generateMiddleSquare(void) {
 	// https://en.wikipedia.org/wiki/Middle-square_method
 	static double xn = 16752482;
@@ -133,6 +144,11 @@ void createFile(char *argv[]) {
 		} else if (strcmp(argv[3], "logistic") == 0) {
 			for (i=0; i<sampleSize; i++) {
 				alea = generateLogisticMap();
+				fprintf(fic, "%lf\n", alea);
+			}
+		} else if (strcmp(argv[3], "randu") == 0) {
+			for (i=0; i<sampleSize; i++) {
+				alea = generateRandu();
 				fprintf(fic, "%lf\n", alea);
 			}
 		} else if (strcmp(argv[3], "lin_cong") == 0) {

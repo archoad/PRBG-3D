@@ -57,7 +57,8 @@ static float fps = 0.0,
 	prevx = 0.0,
 	prevy = 0.0;
 
-static double maxAll = 0,
+static double xMax = 0,
+	maxAll = 0,
 	minAll = 0,
 	sum = 0;
 
@@ -74,7 +75,7 @@ static point *pointsList = NULL;
 
 
 static unsigned long sampleSize = 0,
-	seuil = 70000;
+	seuil = 90000;
 
 static float *vertices = NULL;
 
@@ -127,7 +128,7 @@ void drawPoint(point p) {
 
 void drawSphere(point c) {
 	glTranslatef(c.x, c.y, c.z);
-	glutSolidSphere(0.2, 4, 4);
+	glutSolidSphere(0.3, 4, 4);
 }
 
 
@@ -145,6 +146,12 @@ void drawLine(point p1, point p2){
 void drawString(float x, float y, float z, char *text) {
 	unsigned i = 0;
 	glPushMatrix();
+	glLineWidth(1.0);
+	if (background){ // White background
+		glColor3f(0.0, 0.0, 0.0);
+	} else { // Black background
+		glColor3f(1.0, 1.0, 1.0);
+	}
 	glTranslatef(x, y, z);
 	glScalef(0.01, 0.01, 0.01);
 	for(i=0; i < strlen(text); i++) {
@@ -157,12 +164,10 @@ void drawString(float x, float y, float z, char *text) {
 void drawText(void) {
 	char text1[50], text2[70], text3[70];
 	sprintf(text1, "Michel Dubois (c) 2014, dt: %1.3f, FPS: %4.2f", (dt/1000.0), fps);
-	sprintf(text2, "Min: %e, Max: %e", minAll, maxAll);
-	sprintf(text3, "Nbr elts: %ld, Average: %e", sampleSize, sum/(float)sampleSize);
+	sprintf(text2, "Min: %.02lf, Max: %.02lf", minAll, maxAll);
+	sprintf(text3, "Nbr elts: %ld, Average: %.02lf", sampleSize, sum/(float)sampleSize);
 	textList = glGenLists(1);
 	glNewList(textList, GL_COMPILE);
-	glLineWidth(1.0);
-	glColor3f(1.0, 1.0, 1.0);
 	drawString(-40.0, -40.0, -100.0, text1);
 	drawString(-40.0, -38.0, -100.0, text2);
 	drawString(-40.0, -36.0, -100.0, text3);
@@ -507,6 +512,8 @@ void glmain(int argc, char *argv[]) {
 	glutKeyboardFunc(onKeyboard);
 	glutTimerFunc(dt, onTimer, 0);
 	fprintf(stdout, "INFO: OpenGL Version: %s\n", glGetString(GL_VERSION));
+	fprintf(stdout, "INFO: Min: %.02lf, Max: %.02lf\n", minAll, maxAll);
+	fprintf(stdout, "INFO: Nbr elts: %ld, Average: %.02lf\n", sampleSize, sum/(float)sampleSize);
 	glutMainLoop();
 	glDeleteLists(textList, 1);
 	glDeleteLists(objectList, 1);
@@ -543,21 +550,20 @@ void populatePoints(double tab[]) {
 	if (mono) { hue = (double)rand() / (double)(RAND_MAX - 1); }
 
 	for (i=0; i<sampleSize; i++) {
-		sum += tab[i];
-
 		if (mono) {
 			if (i == 0) { hue = (double)rand() / (double)(RAND_MAX - 1); }
 		} else {
 			hue = (double)i / (double)sampleSize;
 		}
 		hsv2rgb(hue, 1.0, 1.0, &(pointsList[i].r), &(pointsList[i].g), &(pointsList[i].b));
-
+		sum += tab[i];
 		if (i>=3) {
 			x = (tab[i-2] - tab[i-3]);
 			y = (tab[i-1] - tab[i-2]);
 			z = (tab[i] - tab[i-1]);
-			if (maxAll < fabs(x)) maxAll = fabs(x);
-			if (minAll > fabs(x)) minAll = fabs(x);
+			if (xMax < fabs(x)) xMax = fabs(x);
+			if (maxAll < fabs(tab[i])) maxAll = fabs(tab[i]);
+			if (minAll > fabs(tab[i])) minAll = fabs(tab[i]);
 			pointsList[i].x = x;
 			pointsList[i].y = y;
 			pointsList[i].z = z;
@@ -568,9 +574,9 @@ void populatePoints(double tab[]) {
 		}
 	}
 	for (i=0; i<sampleSize; i++) {
-		pointsList[i].x = pointsList[i].x * 25.0 / maxAll;
-		pointsList[i].y = pointsList[i].y * 25.0 / maxAll;
-		pointsList[i].z = pointsList[i].z * 25.0 / maxAll;
+		pointsList[i].x = pointsList[i].x * 25.0 / xMax;
+		pointsList[i].y = pointsList[i].y * 25.0 / xMax;
+		pointsList[i].z = pointsList[i].z * 25.0 / xMax;
 		if (sampleSize < 1000)
 			printf("%ld\t%15.15f, %15.15f, %15.15f\t%1.2f, %1.2f, %1.2f\n", i, pointsList[i].x, pointsList[i].y, pointsList[i].z, pointsList[i].r, pointsList[i].g, pointsList[i].b);
 	}
