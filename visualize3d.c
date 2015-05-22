@@ -29,11 +29,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.*/
 #include <GL/glu.h>
 #include <GL/glut.h>
 
-#define WINDOW_TITLE_PREFIX "My OpenGL program"
+#define WINDOW_TITLE_PREFIX "Visualize PRBG"
 #define couleur(param) printf("\033[%sm",param)
 
-static short winSizeW = 800,
-	winSizeH = 600,
+static short winSizeW = 920,
+	winSizeH = 690,
 	frame = 0,
 	currentTime = 0,
 	timebase = 0,
@@ -58,26 +58,21 @@ static float fps = 0.0,
 	prevy = 0.0;
 
 static double xMax = 0,
+	yMax = 0,
+	zMax = 0,
 	maxAll = 0,
 	minAll = 0,
 	sum = 0;
 
 typedef struct _point {
-	double x;
-	double y;
-	double z;
-	double r;
-	double g;
-	double b;
+	GLfloat x, y, z;
+	GLfloat r, g, b;
 } point;
 
 static point *pointsList = NULL;
 
-
 static unsigned long sampleSize = 0,
-	seuil = 90000;
-
-static float *vertices = NULL;
+	seuil = 60000;
 
 
 
@@ -99,7 +94,7 @@ void takeScreenshot(char *filename) {
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	png_infop info = png_create_info_struct(png);
-	png_byte buffer[width * height * 3];
+	unsigned char *buffer = calloc((width * height * 3), sizeof(unsigned char));
 	int i;
 
 	glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid *)buffer);
@@ -111,6 +106,7 @@ void takeScreenshot(char *filename) {
 	}
 	png_write_end(png, NULL);
 	png_destroy_write_struct(&png, &info);
+	free(buffer);
 	fclose(fp);
 	printf("INFO: Save screenshot on %s (%d x %d)\n", filename, width, height);
 }
@@ -122,11 +118,11 @@ void drawPoint(point p) {
 	glNormal3f(p.x, p.y, p.z);
 	glVertex3f(p.x, p.y, p.z);
 	glEnd();
-	glPointSize(1.0);
 }
 
 
 void drawSphere(point c) {
+	glColor3f(c.r, c.g, c.b);
 	glTranslatef(c.x, c.y, c.z);
 	glutSolidSphere(0.3, 4, 4);
 }
@@ -181,9 +177,10 @@ void drawAxes(void) {
 
 	// cube
 	glPushMatrix();
+	glLineWidth(1.0);
 	glColor3f(0.8, 0.8, 0.8);
 	glTranslatef(0.0, 0.0, 0.0);
-	glutWireCube(100/2.0);
+	glutWireCube(100.0/2.0);
 	glPopMatrix();
 
 	// origin
@@ -237,25 +234,13 @@ void drawAxes(void) {
 
 
 void drawObject(void) {
-	unsigned long i, cpt=0;
-	if (sampleSize >= seuil) {
-		vertices = calloc((sampleSize*3 + sampleSize*3), sizeof(float));
-		for (i=0; i<sampleSize; i++) {
-			vertices[cpt] = pointsList[i].x;
-			vertices[cpt+1] = pointsList[i].y;
-			vertices[cpt+2] = pointsList[i].z;
-			vertices[cpt+3] = pointsList[i].r;
-			vertices[cpt+4] = pointsList[i].g;
-			vertices[cpt+5] = pointsList[i].b;
-			cpt+=6;
-		}
-	} else {
+	unsigned long i;
+	if (sampleSize <= seuil) {
 		objectList = glGenLists(1);
 		glNewList(objectList, GL_COMPILE_AND_EXECUTE);
 		for (i=0; i<sampleSize; i++) {
 			glPushMatrix();
-//			drawLine(pointsList[i-1], pointsList[i]);
-			glColor3f(pointsList[i].r, pointsList[i].g, pointsList[i].b);
+			//drawLine(pointsList[i-1], pointsList[i]);
 			drawSphere(pointsList[i]);
 			glPopMatrix();
 		}
@@ -442,8 +427,8 @@ void display(void) {
 	if (sampleSize >= seuil) {
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
-		glVertexPointer(3, GL_FLOAT, (3+3)*sizeof(vertices[0]), vertices);
-		glColorPointer(3, GL_FLOAT, (3+3)*sizeof(vertices[0]), &vertices[3]);
+		glVertexPointer(3, GL_FLOAT, sizeof(point), pointsList);
+		glColorPointer(3, GL_FLOAT, sizeof(point), &pointsList[0].r);
 		glDrawArrays(GL_POINTS, 0, sampleSize);
 		glDisableClientState(GL_COLOR_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
@@ -499,7 +484,7 @@ void init(void) {
 void glmain(int argc, char *argv[]) {
 	glutInit(&argc, argv);
 	glutInitWindowSize(winSizeW, winSizeH);
-	glutInitWindowPosition(100, 100);
+	glutInitWindowPosition(120, 10);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 	glutCreateWindow(WINDOW_TITLE_PREFIX);
 	init();
@@ -520,7 +505,7 @@ void glmain(int argc, char *argv[]) {
 }
 
 
-void hsv2rgb(double h, double s, double v, double *r, double *g, double *b) {
+void hsv2rgb(double h, double s, double v, GLfloat *r, GLfloat *g, GLfloat *b) {
 	double hp = h * 6;
 	if ( hp == 6 ) hp = 0;
 	int i = floor(hp);
@@ -562,6 +547,8 @@ void populatePoints(double tab[]) {
 			y = (tab[i-1] - tab[i-2]);
 			z = (tab[i] - tab[i-1]);
 			if (xMax < fabs(x)) xMax = fabs(x);
+			if (yMax < fabs(y)) yMax = fabs(y);
+			if (zMax < fabs(z)) zMax = fabs(z);
 			if (maxAll < fabs(tab[i])) maxAll = fabs(tab[i]);
 			if (minAll > fabs(tab[i])) minAll = fabs(tab[i]);
 			pointsList[i].x = x;
@@ -575,8 +562,8 @@ void populatePoints(double tab[]) {
 	}
 	for (i=0; i<sampleSize; i++) {
 		pointsList[i].x = pointsList[i].x * 25.0 / xMax;
-		pointsList[i].y = pointsList[i].y * 25.0 / xMax;
-		pointsList[i].z = pointsList[i].z * 25.0 / xMax;
+		pointsList[i].y = pointsList[i].y * 25.0 / yMax;
+		pointsList[i].z = pointsList[i].z * 25.0 / zMax;
 		if (sampleSize < 1000)
 			printf("%ld\t%15.15f, %15.15f, %15.15f\t%1.2f, %1.2f, %1.2f\n", i, pointsList[i].x, pointsList[i].y, pointsList[i].z, pointsList[i].r, pointsList[i].g, pointsList[i].b);
 	}
@@ -643,7 +630,7 @@ int main(int argc, char *argv[]) {
 			usage();
 			exit(EXIT_FAILURE);
 			break;	
-		}
+	}
 }
 
 

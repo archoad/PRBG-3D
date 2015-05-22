@@ -26,10 +26,14 @@ MATH_FLAGS= -lm
 AES_FLAGS= -lcrypto
 PNG_FLAGS= -lpng
 
-all: dest_sys visualize3d specialNumbers network prbg
+all: dest_sys visualize3d specialNumbers network prbg picture
+
+picture: picture.c
+	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(MATH_FLAGS) $< -o $@
+	@$(STRIP) $@
 
 visualize3d: visualize3d.c
-	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(GL_FLAGS) $(PNG_FLAGS) $< -o $@
+	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(MATH_FLAGS) $(GL_FLAGS) $(PNG_FLAGS) $< -o $@
 	@$(STRIP) $@
 
 network: network.c
@@ -52,4 +56,5 @@ clean:
 	@rm -f specialNumbers
 	@rm -f network
 	@rm -f prbg
+	@rm -f picture
 
