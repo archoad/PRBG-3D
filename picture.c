@@ -174,7 +174,7 @@ char* extractMessage(unsigned char* data, int length) {
 	int i = 0,
 		j = 0,
 		cpt = 0;
-	char *tmp,
+	char *tmp = NULL,
 		*result = malloc((8) * sizeof(char)),
 		*msg = malloc((length+1) * sizeof(char));
 
@@ -309,7 +309,7 @@ void createTarga(char *filename) {
 	while (cpt < width * height) {
 		p = cpt % 256;
 		ps = p ^ 0x01;
-		//printf("%d 0x%02x 0b%s 0b%s\n", p, p, convertByteToBin(p), convertByteToBin(ps));
+		printf("%d 0x%02x 0b%s 0b%s\n", p, p, convertByteToBin(p), convertByteToBin(ps));
 		fwrite(&p, sizeof(unsigned char), 1, file);
 		cpt++;
 	}
@@ -320,9 +320,9 @@ void createTarga(char *filename) {
 int main(int argc, char *argv[]) {
 	switch (argc) {
 		case 2:
-			createStatsFile(argv[1], "resultOrig.dat");
+			createStatsFile(argv[1], "picts/resultOrig.dat");
 			createStegImg(argv[1], "picts/stegano.tga", "Labor omnia vincit improbus.");
-			createStatsFile("picts/stegano.tga", "resultSteg.dat");
+			createStatsFile("picts/stegano.tga", "picts/resultSteg.dat");
 			readStegImg("picts/stegano.tga");
 			createTarga("picts/my_targa.tga");
 			exit(EXIT_SUCCESS);
