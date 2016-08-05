@@ -40,7 +40,7 @@ static short winSizeW = 920,
 	fullScreen = 0,
 	displayHilbert = 0,
 	rotate = 0,
-	dt = 5; // in milliseconds
+	dt = 20; // in milliseconds
 
 static int textList = 0,
 	objectList = 0,
@@ -437,6 +437,8 @@ void onTimer(int event) {
 		default:
 			break;
 	}
+	prevx = 0;
+	prevy = 0;
 	if (rotate) {
 		rotz -= 0.2;
 	} else {
@@ -444,7 +446,7 @@ void onTimer(int event) {
 	}
 	if (rotz > 360) rotz = 360;
 	glutPostRedisplay();
-	glutTimerFunc(dt, onTimer, 1);
+	glutTimerFunc(dt, onTimer, 0);
 }
 
 
@@ -453,13 +455,8 @@ void display(void) {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
 	drawText();
 	glCallList(textList);
-//	if (displayHilbert) {
-//		drawHilbert();
-//		glCallList(hilbertList);
-//	}
 
 	glPushMatrix();
 	glTranslatef(xx, yy, -zoom);
@@ -512,7 +509,7 @@ void init(void) {
 	glEnable(GL_LIGHT0);
 	glEnable(GL_COLOR_MATERIAL);
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-	
+
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
 
@@ -767,9 +764,6 @@ int main(int argc, char *argv[]) {
 		default:
 			usage();
 			exit(EXIT_FAILURE);
-			break;	
+			break;
 	}
 }
-
-
-

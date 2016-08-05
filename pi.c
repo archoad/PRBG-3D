@@ -99,8 +99,8 @@ void calculatePi(void) {
 	fic = fopen("result.dat", "w");
 	if (fic != NULL) {
 		printf("INFO: file create\n");
-		for (i=1; i<sampleSize+1; i++) {
-			fprintf(fic, "%c\n", s[i]);
+		for (i=1; i<sampleSize+1; i+=4) {
+			fprintf(fic, "%c%c%c%c\n", s[i],s[i+1],s[i+2],s[i+3]);
 		}
 		fclose(fic);
 		printf("INFO: file close\nINFO: data saved in result.dat\n");
