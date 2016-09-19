@@ -23,9 +23,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.*/
 #define couleur(param) printf("\033[%sm",param)
 #define MAXSAMPLE 30000000
 
-static long long tempTab[MAXSAMPLE];
-static long long listNumbers[MAXSAMPLE];
-static long long sampleSize=0, size=0;
+static unsigned long long tempTab[MAXSAMPLE];
+static unsigned long long listNumbers[MAXSAMPLE];
+static int sampleSize=0, size=0;
 
 
 
@@ -41,8 +41,17 @@ void usage(void) {
 }
 
 
-long long calculateGCD(long long n1, long long n2) {
-	long long tmp;
+unsigned long long factorial(unsigned long long n) {
+	unsigned long long i=0, result=1;
+	for (i=1; i<=n; i++) {
+		result *= i;
+	}
+	return(result);
+}
+
+
+unsigned long long gcd(unsigned long long n1, unsigned long long n2) {
+	unsigned long long tmp;
 	while (n1 != 0) {
 		tmp = n1;
 		n1 = n2 % n1;
@@ -52,11 +61,11 @@ long long calculateGCD(long long n1, long long n2) {
 }
 
 
-long long eulerTotient(long long n) {
+unsigned long long eulerTotient(unsigned long long n) {
 	// www.answers.com/topic/euler-s-totient-function
-	long long result = 0, k = 0;
+	unsigned long long result = 0, k = 0;
 	for (k=0; k<n; k++) {
-		if (calculateGCD(k,n) == 1)
+		if (gcd(k,n) == 1)
 			result++;
 	}
 	return result;
@@ -64,16 +73,16 @@ long long eulerTotient(long long n) {
 
 
 void printData(void) {
-	long long i;
+	int i;
 	for (i=0; i<size; i++) {
 		printf("%lli, ", listNumbers[i]);
 	}
-	printf("\n%lli\n", size);
+	printf("\n%d\n", size);
 }
 
 
 void saveData(void) {
-	long long i;
+	int i;
 	FILE *fd = fopen("result.dat", "w");
 	if (fd != NULL) {
 		printf("INFO: file create\n");
@@ -89,7 +98,7 @@ void saveData(void) {
 
 
 void bubbleSort(void) {
-	long long i, j, t;
+	int i, j, t;
 
 	for (i=0; i<size; i++) {
 		tempTab[i] = listNumbers[i];
@@ -111,7 +120,7 @@ void bubbleSort(void) {
 
 
 void cribleEratosthene(int n) {
-	long long i, max=round(sqrt(n)), cpt=0, nbrPrime=0;
+	int i, max=round(sqrt(n)), cpt=0, nbrPrime=0;
 
 	// initialisation du tableau
 	tempTab[0] = 0;
@@ -163,7 +172,7 @@ void semiPrimeNumber(int n) {
 	// https://en.wikipedia.org/wiki/Semiprime
 	// http://mathworld.wolfram.com/Semiprime.html
 
-	long long i, j, tmp, cpt=0;
+	int i, j, tmp, cpt=0;
 
 	printf("Semiprimes (https://oeis.org/A001358) less than %d\n", n);
 	printf("Numbers of the form p*q where p and q are primes, not necessarily distinct.\n");
@@ -193,7 +202,7 @@ void blumNumber(int n) {
 	// http://www.gilith.com/research/talks/cambridge1997.pdf
 	// http://cseweb.ucsd.edu/~mihir/papers/gb.pdf
 
-	long long i, j, cpt=0, val=0;
+	int i, j, cpt=0, val=0;
 
 	printf("Blum numbers (https://oeis.org/A016105) less than %d\n", n);
 	printf("nNumbers of the form p * q where p and q are distinct primes congruent to 3 (mod 4).\n");
@@ -222,7 +231,7 @@ void eulerNumber(int n) {
 	// Euler totient function phi(n): count numbers <= n and prime to n.
 	// https://en.wikipedia.org/wiki/Euler%27s_totient_function
 	// http://mathworld.wolfram.com/TotientFunction.html
-	long long i;
+	int i;
 
 	printf("Totient numbers (https://oeis.org/A000010) less than %d\n", n);
 	for (i=0; i<n; i++) {
@@ -233,9 +242,9 @@ void eulerNumber(int n) {
 
 
 void fibonacciNumber(int n) {
-	long long i;
+	int i;
 
-	printf("Fibonacci numbers (https://oeis.org/A000045) less than %d\n", n);
+	printf("Fibonacci numbers (https://oeis.org/A000045)\n");
 	for (i=0; i<n; i++) {
 		if (i==0) { listNumbers[i] = 0; }
 		else if (i==1) { listNumbers[i] = 1; }
@@ -246,9 +255,9 @@ void fibonacciNumber(int n) {
 
 
 void fredkinNumber(int n) {
-	long long i;
+	int i;
 
-	printf("Fredkin replicator (https://oeis.org/A160239) less than %d\n", n);
+	printf("Fredkin replicator (https://oeis.org/A160239)\n");
 	listNumbers[0] = 1;
 	for (i=0; i<n; i++) {
 		listNumbers[2*i] = listNumbers[i];
@@ -256,22 +265,6 @@ void fredkinNumber(int n) {
 		listNumbers[4*i+3] = 2 * listNumbers[2*i+1] + 8 * listNumbers[i];
 	}
 	size = i;
-}
-
-
-void testBlumNumbers(int n) {
-	long long i, j, temp = 0, less = 100000;
-
-	blumNumber(n);
-	for (i=0; i<size; i++) {
-		for (j=i; j<size; j++) {
-			temp = calculateGCD( eulerTotient(listNumbers[i]-1), eulerTotient(listNumbers[j]-1) );
-			printf("(%lli, %lli) -> %lli\n", listNumbers[i], listNumbers[j], temp);
-			if (temp < less)
-				less = temp;
-		}
-	}
-	printf("%lli\n", less);
 }
 
 
@@ -306,10 +299,6 @@ int main(int argc, char *argv[]) {
 				exit(EXIT_FAILURE);
 			}
 			break;
-		case 2:
-			testBlumNumbers(atoi(argv[1]));
- 			exit(EXIT_SUCCESS);
- 			break;
 		default:
 			usage();
 			exit(EXIT_FAILURE);
