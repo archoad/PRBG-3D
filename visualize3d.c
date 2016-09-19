@@ -56,6 +56,8 @@ static float fps = 0.0,
 	zoom = 100.0,
 	prevx = 0.0,
 	prevy = 0.0,
+	alpha = 0.0,
+	pSize = 0.0,
 	sphereRadius = 0.6,
 	squareWidth = 0.055;
 
@@ -68,7 +70,7 @@ static double xMax = 0,
 
 typedef struct _point {
 	GLfloat x, y, z;
-	GLfloat r, g, b;
+	GLfloat r, g, b, a;
 } point;
 
 static point *pointsList = NULL;
@@ -89,6 +91,19 @@ void usage(void) {
 	printf("\t<filename> -> file where the results of the algorithm will be stored\n");
 	printf("\t<background color> -> 'white' or 'black'\n");
 	printf("\t<color type> -> 'mono' or 'multi'\n");
+}
+
+
+double distance(point p1, point p2) {
+	double dx=0.0, dy=0.0, dz=0.0, dist=0.0;
+	dx = p2.x - p1.x;
+	dx = dx * dx;
+	dy = p2.y - p1.y;
+	dy = dy * dy;
+	dz = p2.z - p1.z;
+	dz = dz * dz;
+	dist = sqrt(dx + dy + dz);
+	return(dist);
 }
 
 
@@ -117,8 +132,8 @@ void takeScreenshot(char *filename) {
 
 
 void drawPoint(point p) {
-	glPointSize(1.0);
-	glColor3f(p.r, p.g, p.b);
+	glPointSize(pSize);
+	glColor4f(p.r, p.g, p.b, p.a);
 	glBegin(GL_POINTS);
 	glNormal3f(p.x, p.y, p.z);
 	glVertex3f(p.x, p.y, p.z);
@@ -127,14 +142,14 @@ void drawPoint(point p) {
 
 
 void drawSphere(point p) {
-	glColor3f(p.r, p.g, p.b);
+	glColor4f(p.r, p.g, p.b, p.a);
 	glTranslatef(p.x, p.y, p.z);
 	glutSolidSphere(sphereRadius, 8, 8);
 }
 
 
 void drawSquare(point p) {
-	glColor3f(p.r, p.g, p.b);
+	glColor4f(p.r, p.g, p.b, p.a);
 	glTranslatef(p.x, p.y, p.z);
 	glBegin(GL_QUADS);
 	glVertex3f(-squareWidth, -squareWidth, 0.0); // Bottom left corner
@@ -146,12 +161,15 @@ void drawSquare(point p) {
 
 
 void drawLine(point p1, point p2){
-	glLineWidth(1.0);
+	double d = distance(p1, p2);
+	double dx = p2.x - p1.x;
+	double dy = p2.y - p1.y;
+	double dz = p2.z - p1.z;
+	glColor4f(p1.r, p1.g, p1.b, p1.a);
+	glNormal3f(dx/d, dy/d, dz/d);
 	glBegin(GL_LINES);
-	glColor3f(p1.r, p1.g, p1.b);
-	glNormal3f(p1.x, p1.y, p1.z);
-	glVertex3f(p1.x, p1.y, p1.z);
-	glVertex3f(p2.x, p2.y, p2.z);
+		glVertex3f(p1.x, p1.y, p1.z);
+		glVertex3f(p2.x, p2.y, p2.z);
 	glEnd();
 }
 
@@ -362,6 +380,7 @@ void onMouse(int button, int state, int x, int y) {
 
 
 void onKeyboard(unsigned char key, int x, int y) {
+	unsigned long i = 0;
 	char *name = malloc(20 * sizeof(char));
 	switch (key) {
 		case 27: // Escape
@@ -398,6 +417,19 @@ void onKeyboard(unsigned char key, int x, int y) {
 		case 'h':
 			displayHilbert = !displayHilbert;
 			printf("INFO: display Hilbert graph %d\n", displayHilbert);
+			break;
+		case 'a':
+			alpha -= 0.05;
+			if (alpha <= 0) { alpha = 1.0; }
+			for (i=0; i<sampleSize; i++) {
+				pointsList[i].a = alpha;
+			}
+			printf("INFO: alpha channel %f\n", alpha);
+			break;
+		case 's':
+			pSize += 1.0;
+			if (pSize >= 6) { pSize = 0.5; }
+			printf("INFO: point size %f\n", pSize);
 			break;
 		case 'r':
 			rotate = !rotate;
@@ -453,6 +485,7 @@ void display(void) {
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
 	drawText();
 	glCallList(textList);
 
@@ -461,6 +494,17 @@ void display(void) {
 	glRotatef(rotx, 1.0, 0.0, 0.0);
 	glRotatef(roty, 0.0, 1.0, 0.0);
 	glRotatef(rotz, 0.0, 0.0, 1.0);
+
+	GLfloat ambient1[] = {0.15f, 0.15f, 0.15f, 1.0f};
+	GLfloat diffuse1[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	GLfloat specular1[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	GLfloat position1[] = {0.0f, 0.0f, 24.0f, 1.0f};
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambient1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, specular1);
+	glLightfv(GL_LIGHT1, GL_POSITION, position1);
+	glEnable(GL_LIGHT1);
+
 	drawAxes();
 	if (displayHilbert) {
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -473,13 +517,17 @@ void display(void) {
 		glDisableClientState(GL_VERTEX_ARRAY);
 	}
 	if (sampleSize >= seuil) {
+		glPointSize(pSize);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
 		glVertexPointer(3, GL_FLOAT, sizeof(point), pointsList);
-		glColorPointer(3, GL_FLOAT, sizeof(point), &pointsList[0].r);
+		glColorPointer(4, GL_FLOAT, sizeof(point), &pointsList[0].r);
 		glDrawArrays(GL_POINTS, 0, sampleSize);
 		glDisableClientState(GL_COLOR_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisable(GL_BLEND);
 	} else {
 		glCallList(objectList);
 	}
@@ -497,33 +545,41 @@ void init(void) {
 		glClearColor(0.1, 0.1, 0.1, 1.0);
 	}
 
-	GLfloat position[] = {0.0, 0.0, 0.0, 1.0};
-	glLightfv(GL_LIGHT0, GL_POSITION, position);
-
-	GLfloat modelAmbient[] = {0.5, 0.5, 0.5, 1.0};
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, modelAmbient);
-
 	glEnable(GL_LIGHTING);
+
+	GLfloat ambient[] = {0.05f, 0.05f, 0.05f, 1.0f};
+	GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	GLfloat specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	GLfloat position[] = {0.0f, 0.0f, 0.0f, 1.0f};
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
 	glEnable(GL_LIGHT0);
+
 	glEnable(GL_COLOR_MATERIAL);
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	GLfloat matAmbient[] = {0.3f, 0.3f, 0.3f, 1.0f};
+	GLfloat matDiffuse[] = {0.6f, 0.6f, 0.6f, 1.0f};
+	GLfloat matSpecular[] = {0.8f, 0.8f, 0.8f, 1.0f};
+	GLfloat matShininess[] = {128.0f};
+	glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matAmbient);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDiffuse);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpecular);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, matShininess);
+
+	GLfloat baseAmbient[] = {0.5f, 0.5f, 0.5f, 0.5f};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, baseAmbient);
+	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_DEPTH_TEST);
 
-	GLfloat no_mat[] = {0.0, 0.0, 0.0, 1.0};
-	GLfloat mat_diffuse[] = {0.1, 0.5, 0.8, 1.0};
-	GLfloat mat_specular[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat shininess[] = {128.0};
-	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, shininess);
-	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
-
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_AUTO_NORMAL);
 	glDepthFunc(GL_LESS);
+
+	glDisable(GL_CULL_FACE);
 
 	drawObject();
 }
@@ -531,9 +587,9 @@ void init(void) {
 
 void glmain(int argc, char *argv[]) {
 	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 	glutInitWindowSize(winSizeW, winSizeH);
 	glutInitWindowPosition(120, 10);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
 	glutCreateWindow(WINDOW_TITLE_PREFIX);
 	init();
 	glutDisplayFunc(display);
@@ -646,6 +702,7 @@ void populatePoints(double tab[]) {
 			hue = (double)i / (double)sampleSize;
 		}
 		hsv2rgb(hue, 1.0, 1.0, &(pointsList[i].r), &(pointsList[i].g), &(pointsList[i].b));
+		pointsList[i].a = alpha;
 		sum += tab[i];
 		if (i>=3) {
 			x = tab[i-2] - tab[i-3];
@@ -752,12 +809,10 @@ void playFile(int argc, char *argv[]) {
 int main(int argc, char *argv[]) {
 	switch (argc) {
 		case 4:
-			if (!strncmp(argv[2], "white", 5)) {
-				background = 1;
-			}
-			if (!strncmp(argv[3], "mono", 4)) {
-				mono = 1;
-			}
+			if (!strncmp(argv[2], "white", 5)) { background = 1; }
+			if (!strncmp(argv[3], "mono", 4)) { mono = 1; }
+			alpha = 1.0f;
+			pSize = 1.0f;
 			sampleSize = countFileLines(argv[1]);
 			playFile(argc, argv);
 			exit(EXIT_SUCCESS);

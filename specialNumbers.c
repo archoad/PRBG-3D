@@ -21,12 +21,13 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.*/
 #include <math.h>
 
 #define couleur(param) printf("\033[%sm",param)
+#define MAXSAMPLE 30000000
+
+static long long tempTab[MAXSAMPLE];
+static long long listNumbers[MAXSAMPLE];
+static long long sampleSize=0, size=0;
 
 
-typedef struct data_struct {
-	long *list;
-	long size;
-} data;
 
 
 void usage(void) {
@@ -35,13 +36,13 @@ void usage(void) {
 	couleur("0");
 	printf("Syntaxe: specialNumbers <name> <sample size>\n");
 	printf("\t<name> -> name of the algorithm\n");
-	printf("\t\tavalaible algorithms are: prime, semiprime, blum, euler\n");
+	printf("\t\tavalaible algorithms are: prime, semiprime, blum, euler, fibonacci, fredkin\n");
 	printf("\t<sample size> -> sample size\n");
 }
 
 
-long calculateGCD(long n1, long n2) {
-	long tmp;
+long long calculateGCD(long long n1, long long n2) {
+	long long tmp;
 	while (n1 != 0) {
 		tmp = n1;
 		n1 = n2 % n1;
@@ -51,9 +52,9 @@ long calculateGCD(long n1, long n2) {
 }
 
 
-long eulerTotient(long n) {
+long long eulerTotient(long long n) {
 	// www.answers.com/topic/euler-s-totient-function
-	long result = 0, k = 0;
+	long long result = 0, k = 0;
 	for (k=0; k<n; k++) {
 		if (calculateGCD(k,n) == 1)
 			result++;
@@ -62,24 +63,24 @@ long eulerTotient(long n) {
 }
 
 
-void printData(data primes) {
-	long i;
-	for (i=0; i<primes.size; i++) {
-		printf("%ld, ", primes.list[i]);
+void printData(void) {
+	long long i;
+	for (i=0; i<size; i++) {
+		printf("%lli, ", listNumbers[i]);
 	}
-	printf("\n%ld\n", primes.size);
+	printf("\n%lli\n", size);
 }
 
 
-void saveData(data primes) {
-	long i;
-	FILE *fic = fopen("result.dat", "w");
-	if (fic != NULL) {
+void saveData(void) {
+	long long i;
+	FILE *fd = fopen("result.dat", "w");
+	if (fd != NULL) {
 		printf("INFO: file create\n");
-		for (i=0; i<primes.size; i++) {
-			fprintf(fic, "%ld\n", primes.list[i]);
+		for (i=0; i<size; i++) {
+			fprintf(fd, "%lli\n", listNumbers[i]);
 		}
-		fclose(fic);
+		fclose(fd);
 		printf("INFO: file close\nINFO: data saved in result.dat\n");
 	} else {
 		printf("INFO: open error\n");
@@ -87,179 +88,223 @@ void saveData(data primes) {
 }
 
 
-data bubbleSort(data structure) {
-	long i, j, t, len=structure.size, *a = NULL;
-	data result;
-	a = malloc(len * sizeof(long));
-	for (i=0; i<len; i++) {
-		a[i] = structure.list[i];
+void bubbleSort(void) {
+	long long i, j, t;
+
+	for (i=0; i<size; i++) {
+		tempTab[i] = listNumbers[i];
 	}
-	for (i=len-1; i>=0; i--) {
+	for (i=size-1; i>=0; i--) {
 		for (j=0; j<i; j++) {
-			if(a[j] > a[j+1]) {
-				t = a[j];
-				a[j] = a[j+1];
-				a[j+1] = t;
+			if(tempTab[j] > tempTab[j+1]) {
+				t = tempTab[j];
+				tempTab[j] = tempTab[j+1];
+				tempTab[j+1] = t;
 			}
 		}
 	}
-	result.list = a;
-	result.size = len;
-	return result;
+	for (i=0; i<size; i++) {
+		listNumbers[i] = tempTab[i];
+	}
 }
 
 
-data cribleEratosthene(int n) {
-	// affiche la liste des nombres premiers <n
-	// https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
-	// http://mathworld.wolfram.com/SieveofEratosthenes.html
-	long tab[n], i, max=round(sqrt(n)), val=0, nbrPrime=0, *result = NULL;
-	data temp;
-	printf("Prime numbers (https://oeis.org/A000040)\nLess than %d\n", n);
+
+void cribleEratosthene(int n) {
+	long long i, max=round(sqrt(n)), cpt=0, nbrPrime=0;
+
 	// initialisation du tableau
-	tab[0] = 0;
-	tab[1] = 0;
+	tempTab[0] = 0;
+	tempTab[1] = 0;
 	for (i=2; i<n; i++) {
-		tab[i] = 1;
+		tempTab[i] = 1;
 	}
 	// recherche des nombres premiers
 	for (i=2; i<=max; i++) {
-		if (tab[i] == 1) {
-			val = i;
-			while (i*val<=n) {
-				tab[i*val] = 0;
-				val++;
+		if (tempTab[i] == 1) {
+			cpt = i;
+			while (i*cpt<=n) {
+				tempTab[i*cpt] = 0;
+				cpt++;
 			}
 		}
 	}
 	// calcul du nombre de nombre premier trouvé
 	for (i=0; i<n; i++) {
-		if (tab[i] == 1) {
+		if (tempTab[i] == 1) {
 			nbrPrime++;
 		}
 	}
 	// écriture du tableau de nombres premiers
-	result = malloc(nbrPrime * sizeof(long));
-	val=0;
+	cpt=0;
 	for (i=0; i<n; i++) {
-		if (tab[i] == 1) {
-			result[val] = i;
-			val++;
+		if (tempTab[i] == 1) {
+			listNumbers[cpt] = i;
+			cpt++;
 		}
 	}
-	temp.list = result;
-	temp.size = nbrPrime;
-	return temp;
+	size = nbrPrime;
 }
 
 
-data semiPrimeNumber(int n) {
+void primeNumber(int n) {
+	// affiche la liste des nombres premiers <n
+	// https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes
+	// http://mathworld.wolfram.com/SieveofEratosthenes.html
+
+	printf("Prime numbers (https://oeis.org/A000040) less than %d\n", n);
+	printf("A number n is prime if it is greater than 1 and has no positive divisors except 1 and n.\n");
+	cribleEratosthene(n);
+}
+
+
+void semiPrimeNumber(int n) {
 	// affiche la liste des nombres semi premiers <n
 	// https://en.wikipedia.org/wiki/Semiprime
 	// http://mathworld.wolfram.com/Semiprime.html
-	data primes = cribleEratosthene(n);
-	long i, j, tmp, len=primes.size, *result = NULL, cpt=0;
-	result = malloc(sizeof(long));
-	data temp;
-	printf("Semiprimes (https://oeis.org/A001358)\nLess than %d\n", n);
-	for (i=0; i<len; i++) {
-		for (j=i; j<len; j++) {
-			tmp = primes.list[i] * primes.list[j];
+
+	long long i, j, tmp, cpt=0;
+
+	printf("Semiprimes (https://oeis.org/A001358) less than %d\n", n);
+	printf("Numbers of the form p*q where p and q are primes, not necessarily distinct.\n");
+	cribleEratosthene(n);
+	for (i=0; i<size; i++) {
+		for (j=i; j<size; j++) {
+			tmp = listNumbers[i] * listNumbers[j];
 			if (tmp <= n) {
-				result[cpt] = tmp;
+				tempTab[cpt] = tmp;
 				cpt++;
-				result = realloc(result, sizeof(long) * (cpt + 1));
 			}
 		}
 	}
-	temp.list = result;
-	temp.size = cpt;
-	return bubbleSort(temp);
+
+	for (i=0; i<cpt; i++) {
+		listNumbers[i] = tempTab[i];
+	}
+	size = cpt;
+	bubbleSort();
 }
 
 
-data blumNumber(int n) {
+void blumNumber(int n) {
 	// affiche la liste des nombres de Blum <n
 	// Blum numbers: of form p*p where p & q are distinct primes congruent to 3 (mod 4)
 	// https://en.wikipedia.org/wiki/Blum_integer
 	// http://www.gilith.com/research/talks/cambridge1997.pdf
 	// http://cseweb.ucsd.edu/~mihir/papers/gb.pdf
-	data primes = cribleEratosthene(n);
-	long i, j, len=primes.size, *result = NULL, cpt=0, val=0;
-	result = malloc(sizeof(long));
-	data temp;
-	printf("Blum numbers (https://oeis.org/A016105)\nLess than %d\n", n);
-	for (i=0; i<len; i++) {
-		for (j=i+1; j<len; j++) {
-			if ((primes.list[i] % 4 == 3) && (primes.list[j] % 4 == 3)) {
-				val = primes.list[i] * primes.list[j];
+
+	long long i, j, cpt=0, val=0;
+
+	printf("Blum numbers (https://oeis.org/A016105) less than %d\n", n);
+	printf("nNumbers of the form p * q where p and q are distinct primes congruent to 3 (mod 4).\n");
+	cribleEratosthene(n);
+	for (i=0; i<size; i++) {
+		for (j=i+1; j<size; j++) {
+			if ((listNumbers[i] % 4 == 3) && (listNumbers[j] % 4 == 3)) {
+				val = listNumbers[i] * listNumbers[j];
 				if (val <= n) {
-					result[cpt] = val;
+					tempTab[cpt] = val;
 					cpt++;
-					result = realloc(result, sizeof(long) * (cpt + 1));
 				}
 			}
 		}
 	}
-	temp.list = result;
-	temp.size = cpt;
-	return bubbleSort(temp);
+
+	for (i=0; i<cpt; i++) {
+		listNumbers[i] = tempTab[i];
+	}
+	size = cpt;
+	bubbleSort();
 }
 
 
-data eulerNumber(int n) {
-	// Euler totient function phi(n): count numbers <= n and prime to n. 
+void eulerNumber(int n) {
+	// Euler totient function phi(n): count numbers <= n and prime to n.
 	// https://en.wikipedia.org/wiki/Euler%27s_totient_function
 	// http://mathworld.wolfram.com/TotientFunction.html
-	long i, *result = NULL;
-	result = malloc(n * sizeof(long));
-	data temp;
-	printf("Totient numbers (https://oeis.org/A000010)\nLess than %d\n", n);
+	long long i;
+
+	printf("Totient numbers (https://oeis.org/A000010) less than %d\n", n);
 	for (i=0; i<n; i++) {
-		result[i] = eulerTotient(i+1);
+		listNumbers[i] = eulerTotient(i+1);
 	}
-	temp.list = result;
-	temp.size = i;
-	return temp;
+	size = i;
+}
+
+
+void fibonacciNumber(int n) {
+	long long i;
+
+	printf("Fibonacci numbers (https://oeis.org/A000045) less than %d\n", n);
+	for (i=0; i<n; i++) {
+		if (i==0) { listNumbers[i] = 0; }
+		else if (i==1) { listNumbers[i] = 1; }
+		else { listNumbers[i] = listNumbers[i-1] + listNumbers[i-2]; }
+	}
+	size = i;
+}
+
+
+void fredkinNumber(int n) {
+	long long i;
+
+	printf("Fredkin replicator (https://oeis.org/A160239) less than %d\n", n);
+	listNumbers[0] = 1;
+	for (i=0; i<n; i++) {
+		listNumbers[2*i] = listNumbers[i];
+		listNumbers[4*i+1] = 8 * listNumbers[i];
+		listNumbers[4*i+3] = 2 * listNumbers[2*i+1] + 8 * listNumbers[i];
+	}
+	size = i;
 }
 
 
 void testBlumNumbers(int n) {
-	data numbers;
-	numbers = blumNumber(n);
-	long i, j, len = numbers.size, temp = 0, less = 100000;
-	for (i=0; i<len; i++) {
-		for (j=i; j<len; j++) {
-			temp = calculateGCD( eulerTotient(numbers.list[i]-1), eulerTotient(numbers.list[j]-1) );
-			printf("(%ld, %ld) -> %ld\n", numbers.list[i], numbers.list[j], temp);
+	long long i, j, temp = 0, less = 100000;
+
+	blumNumber(n);
+	for (i=0; i<size; i++) {
+		for (j=i; j<size; j++) {
+			temp = calculateGCD( eulerTotient(listNumbers[i]-1), eulerTotient(listNumbers[j]-1) );
+			printf("(%lli, %lli) -> %lli\n", listNumbers[i], listNumbers[j], temp);
 			if (temp < less)
 				less = temp;
 		}
 	}
-	printf("%ld\n", less);
+	printf("%lli\n", less);
 }
 
 
 int main(int argc, char *argv[]) {
-	data numberList;
 	switch (argc) {
 		case 3:
-			if (!strncmp(argv[1], "prime", 5)) {
-				numberList = cribleEratosthene(atoi(argv[2]));
-			} else if (!strncmp(argv[1], "semiprime", 10)) {
-				numberList = semiPrimeNumber(atoi(argv[2]));
-			} else if (!strncmp(argv[1], "blum", 4)) {
-				numberList = blumNumber(atoi(argv[2]));
-			} else if (!strncmp(argv[1], "euler", 5)) {
-				numberList = eulerNumber(atoi(argv[2]));
+			sampleSize = atoi(argv[2]);
+			if (sampleSize<=MAXSAMPLE) {
+				if (!strncmp(argv[1], "prime", 5)) {
+					primeNumber(sampleSize);
+				} else if (!strncmp(argv[1], "semiprime", 10)) {
+					semiPrimeNumber(sampleSize);
+				} else if (!strncmp(argv[1], "blum", 4)) {
+					blumNumber(sampleSize);
+				} else if (!strncmp(argv[1], "euler", 5)) {
+					eulerNumber(sampleSize);
+				} else if (!strncmp(argv[1], "fibonacci", 9)) {
+					fibonacciNumber(sampleSize);
+				} else if (!strncmp(argv[1], "fredkin", 7)) {
+					fredkinNumber(sampleSize);
+				} else {
+					usage();
+					exit(EXIT_FAILURE);
+					break;
+				}
+				printData();
+				saveData();
+				exit(EXIT_SUCCESS);
 			} else {
+				printf("Sample size exceeded (authorized max sample: %d)\n", MAXSAMPLE);
 				usage();
 				exit(EXIT_FAILURE);
-				break;	
 			}
-			printData(numberList);
-			saveData(numberList);
-			exit(EXIT_SUCCESS);
 			break;
 		case 2:
 			testBlumNumbers(atoi(argv[1]));
@@ -268,7 +313,7 @@ int main(int argc, char *argv[]) {
 		default:
 			usage();
 			exit(EXIT_FAILURE);
-			break;	
+			break;
 		}
 	return 0;
 }
