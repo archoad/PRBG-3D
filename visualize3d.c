@@ -428,7 +428,7 @@ void onKeyboard(unsigned char key, int x, int y) {
 			break;
 		case 's':
 			pSize += 1.0;
-			if (pSize >= 6) { pSize = 0.5; }
+			if (pSize >= 20) { pSize = 0.5; }
 			printf("INFO: point size %f\n", pSize);
 			break;
 		case 'r':
@@ -518,8 +518,6 @@ void display(void) {
 	}
 	if (sampleSize >= seuil) {
 		glPointSize(pSize);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
 		glVertexPointer(3, GL_FLOAT, sizeof(point), pointsList);
@@ -527,7 +525,6 @@ void display(void) {
 		glDrawArrays(GL_POINTS, 0, sampleSize);
 		glDisableClientState(GL_COLOR_ARRAY);
 		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisable(GL_BLEND);
 	} else {
 		glCallList(objectList);
 	}
@@ -572,14 +569,21 @@ void init(void) {
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, baseAmbient);
 	glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 
-	glShadeModel(GL_SMOOTH);
+	// points smoothing
+	glEnable(GL_POINT_SMOOTH);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+
+	//needed for transparency
 	glEnable(GL_DEPTH_TEST);
-
-	glEnable(GL_NORMALIZE);
-	glEnable(GL_AUTO_NORMAL);
 	glDepthFunc(GL_LESS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glDisable(GL_CULL_FACE);
+	glShadeModel(GL_SMOOTH); // smooth shading
+	glEnable(GL_NORMALIZE); // recalc normals for non-uniform scaling
+	glEnable(GL_AUTO_NORMAL);
+
+	glEnable(GL_CULL_FACE); // do not render back-faces, faster
 
 	drawObject();
 }
