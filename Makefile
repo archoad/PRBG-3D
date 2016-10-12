@@ -25,6 +25,7 @@ NET_FLAGS= -lnet -lpcap
 MATH_FLAGS= -lm
 AES_FLAGS= -lcrypto
 PNG_FLAGS= -lpng
+FFTW_FLAGS = -lfftw3
 GMP_FLAGS= -lgmp
 
 all: dest_sys visualize3d specialNumbers network prbg picture pi hilbert
@@ -42,7 +43,7 @@ picture: picture.c
 	@$(STRIP) $@
 
 visualize3d: visualize3d.c
-	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(MATH_FLAGS) $(GL_FLAGS) $(PNG_FLAGS) $< -o $@
+	$(COMPIL) $(CFLAGS) $(IFLAGSDIR) $(LFLAGSDIR) $(FFTW_FLAGS) $(MATH_FLAGS) $(GL_FLAGS) $(PNG_FLAGS) $< -o $@
 	@$(STRIP) $@
 
 network: network.c

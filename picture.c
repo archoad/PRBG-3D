@@ -324,15 +324,12 @@ int main(int argc, char *argv[]) {
 			createStegImg(argv[1], "picts/stegano.tga", "Labor omnia vincit improbus.");
 			createStatsFile("picts/stegano.tga", "picts/resultSteg.dat");
 			readStegImg("picts/stegano.tga");
-			createTarga("picts/my_targa.tga");
+			//createTarga("picts/my_targa.tga");
 			exit(EXIT_SUCCESS);
 			break;
 		default:
 			usage();
 			exit(EXIT_FAILURE);
-			break;	
+			break;
 		}
 }
-
-
-
