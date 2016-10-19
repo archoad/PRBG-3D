@@ -514,7 +514,7 @@ void hilbert(double x, double y, double z, float xi, float xj, float yi, float y
 }
 
 
-void populateHilbert() {
+void populateHilbert(void) {
 	double x0 = 0.0, y0 = 0.0, z0 = 0.0;
 	unsigned long i;
 	hilbertPointList = (point*)calloc(hilbertSize, sizeof(point));
